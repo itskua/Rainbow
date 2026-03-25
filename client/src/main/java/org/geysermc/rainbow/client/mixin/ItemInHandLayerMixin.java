@@ -41,15 +41,17 @@ public class ItemInHandLayerMixin {
         }
 
         if (TransformEditorSession.isPreviewRender()) {
+            TransformAdjustment converted = convertForBedrockPreview(TransformEditorSession.activeAdjustment(), TransformEditorSession.previewMode());
             apply(poseStack, switch (TransformEditorSession.previewMode()) {
                 case FIRST_PERSON -> PREVIEW_FIRST_PERSON;
                 case THIRD_PERSON -> PREVIEW_THIRD_PERSON;
                 case HEAD -> PREVIEW_HEAD;
             });
+            apply(poseStack, converted);
+            return;
         }
 
-        TransformAdjustment adjustment = TransformEditorSession.activeAdjustment();
-        apply(poseStack, adjustment);
+        apply(poseStack, TransformEditorSession.activeAdjustment());
     }
 
     private static void apply(PoseStack poseStack, TransformAdjustment adjustment) {
@@ -58,5 +60,21 @@ public class ItemInHandLayerMixin {
         poseStack.mulPose(Axis.YP.rotationDegrees(adjustment.rotation().y()));
         poseStack.mulPose(Axis.ZP.rotationDegrees(adjustment.rotation().z()));
         poseStack.scale(adjustment.scale().x(), adjustment.scale().y(), adjustment.scale().z());
+    }
+
+    private static TransformAdjustment convertForBedrockPreview(TransformAdjustment adjustment, TransformEditorSession.PreviewMode mode) {
+        return switch (mode) {
+            case FIRST_PERSON -> new TransformAdjustment(
+                    new org.joml.Vector3f(adjustment.position().z(), -adjustment.position().x(), -adjustment.position().y()),
+                    new org.joml.Vector3f(adjustment.rotation().x(), adjustment.rotation().z(), adjustment.rotation().y()),
+                    new org.joml.Vector3f(adjustment.scale().x(), adjustment.scale().y(), adjustment.scale().z())
+            );
+            case THIRD_PERSON -> new TransformAdjustment(
+                    new org.joml.Vector3f(-adjustment.position().x(), -adjustment.position().y(), adjustment.position().z()),
+                    new org.joml.Vector3f(-adjustment.rotation().x(), adjustment.rotation().y(), adjustment.rotation().z()),
+                    new org.joml.Vector3f(adjustment.scale().x(), adjustment.scale().y(), adjustment.scale().z())
+            );
+            case HEAD -> adjustment;
+        };
     }
 }

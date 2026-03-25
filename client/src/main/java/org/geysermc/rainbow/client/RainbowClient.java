@@ -9,6 +9,7 @@ import org.geysermc.rainbow.Rainbow;
 import org.geysermc.rainbow.RainbowIO;
 import org.geysermc.rainbow.client.command.CommandSuggestionsArgumentType;
 import org.geysermc.rainbow.client.command.PackGeneratorCommand;
+import org.geysermc.rainbow.client.editor.ConverterCalibrationManager;
 import org.geysermc.rainbow.client.editor.TransformOverrideManager;
 import org.geysermc.rainbow.client.mapper.PackMapper;
 
@@ -22,6 +23,7 @@ public class RainbowClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         instance = this;
+        ConverterCalibrationManager.load();
         TransformOverrideManager.load();
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) -> PackGeneratorCommand.register(dispatcher, packManager, packMapper));
         ClientTickEvents.START_CLIENT_TICK.register(packMapper::tick);

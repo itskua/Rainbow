@@ -17,6 +17,7 @@ public final class TransformEditorSession {
     private static boolean previewRender;
     private static String targetIdentifier;
     private static ItemTransformOverrides overrides = ItemTransformOverrides.DEFAULT;
+    private static TransformAdjustment previewAdjustment;
     private static PreviewMode previewMode = PreviewMode.THIRD_PERSON;
 
     private TransformEditorSession() {
@@ -33,6 +34,7 @@ public final class TransformEditorSession {
         previewRender = false;
         targetIdentifier = null;
         overrides = ItemTransformOverrides.DEFAULT;
+        previewAdjustment = null;
         previewMode = PreviewMode.THIRD_PERSON;
     }
 
@@ -60,7 +62,14 @@ public final class TransformEditorSession {
         TransformEditorSession.previewRender = previewRender;
     }
 
+    public static void setPreviewAdjustment(TransformAdjustment previewAdjustment) {
+        TransformEditorSession.previewAdjustment = previewAdjustment;
+    }
+
     public static TransformAdjustment activeAdjustment() {
+        if (previewAdjustment != null) {
+            return previewAdjustment;
+        }
         return switch (previewMode) {
             case FIRST_PERSON -> overrides.firstPerson();
             case THIRD_PERSON -> overrides.thirdPerson();
