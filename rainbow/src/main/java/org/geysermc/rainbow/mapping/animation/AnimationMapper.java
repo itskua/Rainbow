@@ -12,11 +12,10 @@ public class AnimationMapper {
     private static final Vector3fc FIRST_PERSON_ROTATION_OFFSET = new Vector3f(-22.5F, 50.0F, -32.5F);
     private static final Vector3fc FIRST_PERSON_GRIP_OFFSET = new Vector3f(0.0F, -1.5F, 1.5F);
     private static final Vector3fc THIRD_PERSON_GRIP_OFFSET = new Vector3f(0.0F, -1.5F, 1.5F);
-
     // These transformations aren't perfect... but I spent over 4 hours trying to get these. It's good enough for me.
-    public static BedrockAnimationContext mapAnimation(String identifier, String bone, ItemTransforms transforms) {
+    public static BedrockAnimationContext mapAnimation(String identifier, String bone, ItemTransforms transforms, boolean handheld) {
         ItemTransformOverrides overrides = TransformOverrideRegistry.get(identifier);
-        ItemTransformOverrides finalTransforms = applyOverrides(baseTransforms(transforms), overrides);
+        ItemTransformOverrides finalTransforms = applyOverrides(baseTransforms(transforms, handheld), overrides);
 
         TransformAdjustment firstPerson = finalTransforms.firstPerson();
         TransformAdjustment thirdPerson = finalTransforms.thirdPerson();
@@ -38,8 +37,11 @@ public class AnimationMapper {
                 .build(), "animation." + identifier + ".hold_first_person", "animation." + identifier + ".hold_third_person", "animation." + identifier + ".head");
     }
 
-    public static ItemTransformOverrides baseTransforms(ItemTransforms transforms) {
-        return applyOverrides(rawBaseTransforms(transforms), ConverterCalibrationRegistry.get());
+    public static ItemTransformOverrides baseTransforms(ItemTransforms transforms, boolean handheld) {
+        if (AnimationPresetRegistry.largeItemPresetEnabled()) {
+            return handheld ? AnimationPresetRegistry.handheldPreset() : AnimationPresetRegistry.regularPreset();
+        }
+        return rawBaseTransforms(transforms);
     }
 
     public static ItemTransformOverrides rawBaseTransforms(ItemTransforms transforms) {

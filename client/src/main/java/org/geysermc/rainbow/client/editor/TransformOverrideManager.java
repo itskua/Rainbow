@@ -15,6 +15,7 @@ import org.geysermc.rainbow.RainbowIO;
 import org.geysermc.rainbow.client.MinecraftAssetResolver;
 import org.geysermc.rainbow.mapping.animation.AnimationMapper;
 import org.geysermc.rainbow.mapping.animation.ItemTransformOverrides;
+import org.geysermc.rainbow.mapping.geometry.BedrockGeometryContext;
 import org.geysermc.rainbow.mapping.animation.TransformOverrideRegistry;
 
 import java.io.IOException;
@@ -124,7 +125,7 @@ public final class TransformOverrideManager {
 
         return resolver.getResolvedModel(wrapper.model())
                 .map(model -> includeCalibration
-                        ? AnimationMapper.baseTransforms(model.getTopTransforms())
+                        ? AnimationMapper.baseTransforms(model.getTopTransforms(), BedrockGeometryContext.isHandheldModel(model))
                         : AnimationMapper.rawBaseTransforms(model.getTopTransforms()));
     }
 }

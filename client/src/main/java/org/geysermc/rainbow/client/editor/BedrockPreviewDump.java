@@ -10,12 +10,11 @@ import org.geysermc.rainbow.mapping.animation.ItemTransformOverrides;
 
 import java.nio.file.Path;
 
-public record BedrockPreviewDump(String identifier, ItemTransformOverrides rawBase, ItemTransformOverrides calibration, ItemTransformOverrides base, ItemTransformOverrides override, ItemTransformOverrides finalValue) {
+public record BedrockPreviewDump(String identifier, ItemTransformOverrides rawBase, ItemTransformOverrides base, ItemTransformOverrides override, ItemTransformOverrides finalValue) {
     public static final Codec<BedrockPreviewDump> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
                     Codec.STRING.fieldOf("identifier").forGetter(BedrockPreviewDump::identifier),
                     ItemTransformOverrides.CODEC.fieldOf("raw_base").forGetter(BedrockPreviewDump::rawBase),
-                    ItemTransformOverrides.CODEC.fieldOf("calibration").forGetter(BedrockPreviewDump::calibration),
                     ItemTransformOverrides.CODEC.fieldOf("base").forGetter(BedrockPreviewDump::base),
                     ItemTransformOverrides.CODEC.fieldOf("override").forGetter(BedrockPreviewDump::override),
                     ItemTransformOverrides.CODEC.fieldOf("final").forGetter(BedrockPreviewDump::finalValue)

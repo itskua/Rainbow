@@ -26,17 +26,6 @@ import org.lwjgl.BufferUtils;
 import java.util.Optional;
 
 public final class RainbowOverlay {
-    private enum EditorMode {
-        ITEM("Item Editor"),
-        DEV("Dev Calibration");
-
-        private final String label;
-
-        EditorMode(String label) {
-            this.label = label;
-        }
-    }
-
     private enum ViewMode {
         FIRST_PERSON("First Person", TransformEditorSession.PreviewMode.FIRST_PERSON),
         THIRD_PERSON("Third Person", TransformEditorSession.PreviewMode.THIRD_PERSON),
@@ -57,13 +46,10 @@ public final class RainbowOverlay {
     private boolean visible = true;
     private boolean previewVisible = true;
     private String targetIdentifier;
-    private EditorMode editorMode = EditorMode.ITEM;
     private ItemTransformOverrides overrides = ItemTransformOverrides.DEFAULT;
     private ItemTransformOverrides rawBaseTransforms = ItemTransformOverrides.DEFAULT;
     private ItemTransformOverrides baseTransforms = ItemTransformOverrides.DEFAULT;
     private ItemTransformOverrides finalTransforms = ItemTransformOverrides.DEFAULT;
-    private ItemTransformOverrides devCalibration = ItemTransformOverrides.DEFAULT;
-    private ItemTransformOverrides devFinalTransforms = ItemTransformOverrides.DEFAULT;
     private ViewMode mode = ViewMode.THIRD_PERSON;
     private String status = "Rainbow overlay ready";
     private int previewLeft;
@@ -99,10 +85,6 @@ public final class RainbowOverlay {
         return previewVisible;
     }
 
-    public boolean showCalibrationComparison() {
-        return editorMode == EditorMode.DEV;
-    }
-
     public void show() {
         visible = true;
     }
@@ -126,14 +108,6 @@ public final class RainbowOverlay {
 
     public float previewPitch() {
         return previewPitch;
-    }
-
-    public TransformAdjustment previewRawAdjustment() {
-        return adjustmentFor(rawBaseTransforms);
-    }
-
-    public TransformAdjustment previewCalibratedAdjustment() {
-        return adjustmentFor(devFinalTransforms);
     }
 
     public void updatePreviewInteraction(Minecraft minecraft) {
@@ -183,8 +157,6 @@ public final class RainbowOverlay {
         ImGui.separator();
 
         renderPackActions(minecraft);
-        ImGui.separator();
-        renderEditorModeSwitch();
         ImGui.separator();
         renderEditor();
         ImGui.separator();
@@ -250,23 +222,8 @@ public final class RainbowOverlay {
         }
     }
 
-    private void renderEditorModeSwitch() {
-        ImGui.text("Workspace");
-        if (ImGui.button("Item Editor")) {
-            switchEditorMode(EditorMode.ITEM);
-        }
-        ImGui.sameLine();
-        if (ImGui.button("Dev Calibration")) {
-            switchEditorMode(EditorMode.DEV);
-        }
-        ImGui.textWrapped(switch (editorMode) {
-            case ITEM -> "Per-item export override. Use this after mapping to fix one specific item.";
-            case DEV -> "Repo/dev-only converter calibration. Use this to tune Rainbow's global Bedrock base placement.";
-        });
-    }
-
     private void renderEditor() {
-        ImGui.text(editorMode.label);
+        ImGui.text("Held Item Editor");
 
         if (targetIdentifier == null) {
             ImGui.textWrapped("Hold a mapped custom item with an item model to edit its transform live.");
@@ -286,35 +243,37 @@ public final class RainbowOverlay {
             switchMode(ViewMode.HEAD);
         }
 
-        ImGui.text("Editing: " + editorMode.label + " / " + mode.label);
+        ImGui.text("Editing: " + mode.label);
         renderAxisGuide();
         renderVectorEditor("Position", "position", 0.5F);
         renderVectorEditor("Rotation", "rotation", 2.5F);
         renderVectorEditor("Scale", "scale", 0.05F);
+        renderCurrentValues("Final", displayedAdjustment());
 
-        if (editorMode == EditorMode.ITEM) {
-            renderCurrentValues("Base", baseAdjustment());
-            renderCurrentValues("Override", overrideAdjustment());
-            renderCurrentValues("Final", displayedAdjustment());
-        } else {
-            renderCurrentValues("Raw Base", rawBaseAdjustment());
-            renderCurrentValues("Calibration", overrideAdjustment());
-            renderCurrentValues("Calibrated", displayedAdjustment());
-        }
-
-        if (ImGui.button(editorMode == EditorMode.ITEM ? "Save Item Override" : "Save Dev Calibration")) {
+        if (ImGui.button("Save Item Override")) {
             saveActiveEditor();
         }
         ImGui.sameLine();
-        if (ImGui.button(editorMode == EditorMode.ITEM ? "Reset Item Override" : "Reset Dev Calibration")) {
+        if (ImGui.button("Reset Item Override")) {
             resetActiveEditor();
+        }
+        ImGui.sameLine();
+        boolean presetEnabled = AnimationPresetManager.largeItemPresetEnabled();
+        if (ImGui.button(presetEnabled ? "Large Item Preset: ON" : "Large Item Preset: OFF")) {
+            AnimationPresetManager.setLargeItemPresetEnabled(!presetEnabled);
+            recalculateDisplayedTransforms();
+            refreshMappedHeldItem();
+            setStatus((!presetEnabled ? "Enabled" : "Disabled") + " optional large item Bedrock preset", false);
+        }
+        ImGui.sameLine();
+        if (ImGui.button("Preset Config Path")) {
+            setStatus("Preset config: " + AnimationPresetManager.path(), false);
         }
         ImGui.sameLine();
         if (ImGui.button("Dump Bedrock Values")) {
             var path = BedrockPreviewDump.save(new BedrockPreviewDump(
                     targetIdentifier,
                     rawBaseTransforms,
-                    devCalibration,
                     baseTransforms,
                     overrides,
                     finalTransforms
@@ -363,9 +322,6 @@ public final class RainbowOverlay {
     }
 
     private void renderAxisGuide() {
-        if (editorMode == EditorMode.DEV) {
-            ImGui.textWrapped("Developer calibration edits Rainbow's global Java-to-Bedrock base transform. Item overrides are applied later on top of this.");
-        }
         ImGui.textWrapped(switch (mode) {
             case FIRST_PERSON ->
                     "First Person: Position X=up/down, Y=distance, Z=left/right. Rotation X=tilt, Y=roll, Z=pan. Scale X=width, Y=height, Z=depth.";
@@ -390,12 +346,6 @@ public final class RainbowOverlay {
             previewYaw = 22.0F;
             previewPitch = -8.0F;
         }
-        recalculateDisplayedTransforms();
-    }
-
-    private void switchEditorMode(EditorMode mode) {
-        editorMode = mode;
-        updateSessionOverrides();
         recalculateDisplayedTransforms();
     }
 
@@ -439,19 +389,11 @@ public final class RainbowOverlay {
             default -> throw new IllegalArgumentException("Unknown transform group " + group);
         };
 
-        if (editorMode == EditorMode.ITEM) {
-            overrides = switch (mode) {
-                case FIRST_PERSON -> new ItemTransformOverrides(updated, overrides.thirdPerson(), overrides.head());
-                case THIRD_PERSON -> new ItemTransformOverrides(overrides.firstPerson(), updated, overrides.head());
-                case HEAD -> new ItemTransformOverrides(overrides.firstPerson(), overrides.thirdPerson(), updated);
-            };
-        } else {
-            devCalibration = switch (mode) {
-                case FIRST_PERSON -> new ItemTransformOverrides(updated, devCalibration.thirdPerson(), devCalibration.head());
-                case THIRD_PERSON -> new ItemTransformOverrides(devCalibration.firstPerson(), updated, devCalibration.head());
-                case HEAD -> new ItemTransformOverrides(devCalibration.firstPerson(), devCalibration.thirdPerson(), updated);
-            };
-        }
+        overrides = switch (mode) {
+            case FIRST_PERSON -> new ItemTransformOverrides(updated, overrides.thirdPerson(), overrides.head());
+            case THIRD_PERSON -> new ItemTransformOverrides(overrides.firstPerson(), updated, overrides.head());
+            case HEAD -> new ItemTransformOverrides(overrides.firstPerson(), overrides.thirdPerson(), updated);
+        };
         updateSessionOverrides();
         recalculateDisplayedTransforms();
     }
@@ -468,13 +410,11 @@ public final class RainbowOverlay {
     }
 
     private TransformAdjustment displayedAdjustment() {
-        ItemTransformOverrides active = editorMode == EditorMode.ITEM ? finalTransforms : devFinalTransforms;
-        return adjustmentFor(active);
+        return adjustmentFor(finalTransforms);
     }
 
     private TransformAdjustment baseAdjustment() {
-        ItemTransformOverrides active = editorMode == EditorMode.ITEM ? baseTransforms : rawBaseTransforms;
-        return adjustmentFor(active);
+        return adjustmentFor(baseTransforms);
     }
 
     private TransformAdjustment rawBaseAdjustment() {
@@ -482,8 +422,7 @@ public final class RainbowOverlay {
     }
 
     private TransformAdjustment overrideAdjustment() {
-        ItemTransformOverrides active = editorMode == EditorMode.ITEM ? overrides : devCalibration;
-        return adjustmentFor(active);
+        return adjustmentFor(overrides);
     }
 
     private void syncHeldItem() {
@@ -498,14 +437,12 @@ public final class RainbowOverlay {
         if (!nextIdentifier.equals(targetIdentifier)) {
             targetIdentifier = nextIdentifier;
             overrides = TransformOverrideManager.get(targetIdentifier);
-            devCalibration = ConverterCalibrationManager.get();
-            TransformEditorSession.open(targetIdentifier, activeEditorOverrides());
+            TransformEditorSession.open(targetIdentifier, overrides);
             TransformEditorSession.setPreviewMode(mode.previewMode);
             recalculateDisplayedTransforms();
             setStatus("Editing held item " + targetIdentifier, false);
         } else if (!TransformEditorSession.isActive()) {
-            devCalibration = ConverterCalibrationManager.get();
-            TransformEditorSession.open(targetIdentifier, activeEditorOverrides());
+            TransformEditorSession.open(targetIdentifier, overrides);
             TransformEditorSession.setPreviewMode(mode.previewMode);
             recalculateDisplayedTransforms();
         }
@@ -614,52 +551,28 @@ public final class RainbowOverlay {
 
     private void recalculateDisplayedTransforms() {
         rawBaseTransforms = TransformOverrideManager.rawBaseTransformsForHeldItem().orElse(ItemTransformOverrides.DEFAULT);
-        devCalibration = ConverterCalibrationManager.get();
-        devFinalTransforms = AnimationMapper.applyOverrides(rawBaseTransforms, devCalibration);
         baseTransforms = TransformOverrideManager.baseTransformsForHeldItem().orElse(ItemTransformOverrides.DEFAULT);
         finalTransforms = AnimationMapper.applyOverrides(baseTransforms, overrides);
         refreshInputs();
     }
 
     private void updateSessionOverrides() {
-        TransformEditorSession.setOverrides(activeEditorOverrides());
-    }
-
-    private ItemTransformOverrides activeEditorOverrides() {
-        return editorMode == EditorMode.ITEM ? overrides : devCalibration;
+        TransformEditorSession.setOverrides(overrides);
     }
 
     private void saveActiveEditor() {
-        if (editorMode == EditorMode.ITEM) {
-            TransformOverrideManager.put(targetIdentifier, overrides);
-            refreshMappedHeldItem();
-            setStatus("Saved item override for " + targetIdentifier, false);
-            return;
-        }
-
-        ConverterCalibrationManager.put(devCalibration);
-        recalculateDisplayedTransforms();
+        TransformOverrideManager.put(targetIdentifier, overrides);
         refreshMappedHeldItem();
-        setStatus("Saved dev calibration for Rainbow base transforms", false);
+        setStatus("Saved item override for " + targetIdentifier, false);
     }
 
     private void resetActiveEditor() {
-        if (editorMode == EditorMode.ITEM) {
-            overrides = ItemTransformOverrides.DEFAULT;
-            TransformOverrideManager.reset(targetIdentifier);
-            updateSessionOverrides();
-            recalculateDisplayedTransforms();
-            refreshMappedHeldItem();
-            setStatus("Reset item override for " + targetIdentifier, false);
-            return;
-        }
-
-        devCalibration = ItemTransformOverrides.DEFAULT;
-        ConverterCalibrationManager.reset();
+        overrides = ItemTransformOverrides.DEFAULT;
+        TransformOverrideManager.reset(targetIdentifier);
         updateSessionOverrides();
         recalculateDisplayedTransforms();
         refreshMappedHeldItem();
-        setStatus("Reset Rainbow dev calibration", false);
+        setStatus("Reset item override for " + targetIdentifier, false);
     }
 
     private static void setInputs(ImFloat[] inputs, Vector3fc vector) {

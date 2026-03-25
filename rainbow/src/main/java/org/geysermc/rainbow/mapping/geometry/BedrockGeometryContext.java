@@ -23,10 +23,13 @@ public record BedrockGeometryContext(Optional<MappedGeometry> geometry,
             .map(Identifier::withDefaultNamespace)
             .toList();
 
-    public static BedrockGeometryContext create(Identifier bedrockIdentifier, ResolvedModel model, ItemStack stackToRender, PackContext context) {
+    public static boolean isHandheldModel(ResolvedModel model) {
         ResolvedModel parentModel = model.parent();
-        // debugName() returns the resource location of the model as a string
-        boolean handheld = parentModel != null && HANDHELD_MODELS.contains(Identifier.parse(parentModel.debugName()));
+        return parentModel != null && HANDHELD_MODELS.contains(Identifier.parse(parentModel.debugName()));
+    }
+
+    public static BedrockGeometryContext create(Identifier bedrockIdentifier, ResolvedModel model, ItemStack stackToRender, PackContext context) {
+        boolean handheld = isHandheldModel(model);
 
         TextureSlots textures = model.getTopTextureSlots();
         Material layer0Texture = textures.getMaterial("layer0");
@@ -47,7 +50,7 @@ public record BedrockGeometryContext(Optional<MappedGeometry> geometry,
             String animationIdentifier = overrideIdentifier != null
                     ? Rainbow.bedrockSafeIdentifier(overrideIdentifier)
                     : Rainbow.bedrockSafeIdentifier(bedrockIdentifier);
-            animation = Optional.of(AnimationMapper.mapAnimation(animationIdentifier, "bone", model.getTopTransforms()));
+            animation = Optional.of(AnimationMapper.mapAnimation(animationIdentifier, "bone", model.getTopTransforms(), handheld));
             icon = geometry.get().icon();
         }
 
