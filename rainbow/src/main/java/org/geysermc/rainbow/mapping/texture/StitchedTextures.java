@@ -64,7 +64,8 @@ public record StitchedTextures(Map<String, TextureAtlasSprite> sprites, Supplier
         return RainbowIO.safeIO(() -> {
             try (TextureResource texture = context.assetResolver().getTextureSafely(Rainbow.getAtlasIdFromMaterial(material), material.texture()).orElse(null)) {
                 if (texture != null) {
-                    return new SpriteContents(material.texture(), texture.sizeOfFrame(), texture.getFirstFrame(true));
+                    NativeImage spriteImage = texture.getFirstFrame(true);
+                    return new SpriteContents(material.texture(), texture.sizeOfFrame(), spriteImage);
                 }
             }
             return null;

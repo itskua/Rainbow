@@ -10,6 +10,8 @@ import org.joml.Vector3fc;
 public class AnimationMapper {
     private static final Vector3fc FIRST_PERSON_POSITION_OFFSET = new Vector3f(-7.0F, 22.5F, -7.0F);
     private static final Vector3fc FIRST_PERSON_ROTATION_OFFSET = new Vector3f(-22.5F, 50.0F, -32.5F);
+    private static final Vector3fc FIRST_PERSON_GRIP_OFFSET = new Vector3f(0.0F, -1.5F, 1.5F);
+    private static final Vector3fc THIRD_PERSON_GRIP_OFFSET = new Vector3f(0.0F, -1.5F, 1.5F);
 
     // These transformations aren't perfect... but I spent over 4 hours trying to get these. It's good enough for me.
     public static BedrockAnimationContext mapAnimation(String identifier, String bone, ItemTransforms transforms) {
@@ -17,7 +19,7 @@ public class AnimationMapper {
 
         // I don't think it's possible to display separate animations for left- and right hands
         ItemTransform firstPerson = transforms.firstPersonRightHand();
-        Vector3f firstPersonPosition = firstPerson.translation().div(0.0625F, new Vector3f()).add(FIRST_PERSON_POSITION_OFFSET);
+        Vector3f firstPersonPosition = firstPerson.translation().div(0.0625F, new Vector3f()).add(FIRST_PERSON_POSITION_OFFSET).add(FIRST_PERSON_GRIP_OFFSET);
         Vector3f firstPersonRotation = FIRST_PERSON_ROTATION_OFFSET.add(firstPerson.rotation(), new Vector3f());
         Vector3f firstPersonScale = new Vector3f(firstPerson.scale());
 
@@ -25,7 +27,8 @@ public class AnimationMapper {
         // Translation Y/Z axes are swapped on bedrock, bedrock displays the model lower than Java does, and the X/Y axes (Java) is inverted on bedrock
         // Also the model appears lower on bedrock so we need to add 10 on the Y axis here
         Vector3f thirdPersonTranslation = thirdPerson.translation().div(0.0625F, new Vector3f());
-        Vector3f thirdPersonPosition = new Vector3f(-thirdPersonTranslation.x(), 10.0F + thirdPersonTranslation.z(), -thirdPersonTranslation.y());
+        Vector3f thirdPersonPosition = new Vector3f(-thirdPersonTranslation.x(), 10.0F + thirdPersonTranslation.z(), -thirdPersonTranslation.y())
+                .add(THIRD_PERSON_GRIP_OFFSET);
         // Rotation X/Y axes are inverted on bedrock, bedrock needs a +90-degree rotation on the X axis, and I couldn't figure out how the Z axis works
         Vector3f thirdPersonRotation = new Vector3f(-thirdPerson.rotation().x() + 90.0F, -thirdPerson.rotation().y(), 0.0F);
         Vector3f thirdPersonScale = new Vector3f(thirdPerson.scale());

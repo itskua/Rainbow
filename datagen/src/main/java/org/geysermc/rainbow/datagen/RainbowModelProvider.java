@@ -1,6 +1,9 @@
 package org.geysermc.rainbow.datagen;
 
 import com.google.common.hash.Hashing;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.serialization.Codec;
 import net.fabricmc.fabric.api.client.datagen.v1.provider.FabricModelProvider;
@@ -28,6 +31,7 @@ import net.minecraft.world.item.equipment.EquipmentAsset;
 import org.geysermc.rainbow.Rainbow;
 import org.geysermc.rainbow.RainbowIO;
 import org.geysermc.rainbow.mapping.AssetResolver;
+import org.geysermc.rainbow.mapping.ModelTextureSize;
 import org.geysermc.rainbow.mapping.PackSerializer;
 import org.geysermc.rainbow.mapping.texture.TextureResource;
 import org.geysermc.rainbow.pack.BedrockPack;
@@ -229,6 +233,26 @@ public abstract class RainbowModelProvider extends FabricModelProvider {
                         try (InputStream textureStream = resource.open()) {
                             NativeImage texture = NativeImage.read(textureStream);
                             return new TextureResource(texture, animationMetadata.map(animation -> animation.calculateFrameSize(texture.getWidth(), texture.getHeight())));
+                        }
+                    }));
+        }
+
+        @Override
+        public Optional<ModelTextureSize> getModelTextureSize(Identifier identifier) {
+            return resourceManager.getResource(identifier.withPrefix("models/").withSuffix(".json"))
+                    .flatMap(resource -> RainbowIO.safeIO(() -> {
+                        try (BufferedReader reader = resource.openAsReader()) {
+                            JsonElement parsed = JsonParser.parseReader(reader);
+                            if (!parsed.isJsonObject()) {
+                                return null;
+                            }
+
+                            JsonArray textureSize = parsed.getAsJsonObject().getAsJsonArray("texture_size");
+                            if (textureSize == null || textureSize.size() != 2) {
+                                return null;
+                            }
+
+                            return new ModelTextureSize(textureSize.get(0).getAsInt(), textureSize.get(1).getAsInt());
                         }
                     }));
         }

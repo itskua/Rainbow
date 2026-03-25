@@ -22,6 +22,8 @@ public interface AssetResolver {
 
     Optional<TextureResource> getTexture(Identifier atlas, Identifier identifier);
 
+    Optional<ModelTextureSize> getModelTextureSize(Identifier identifier);
+
     default Optional<TextureResource> getTextureSafely(Identifier atlas, Identifier identifier) {
         if (atlas.equals(ModelManager.BLOCK_OR_ITEM)) {
             return getTexture(AtlasIds.BLOCKS, identifier)

@@ -1,6 +1,9 @@
 package org.geysermc.rainbow.client;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.item.ClientItem;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -19,9 +22,11 @@ import org.geysermc.rainbow.RainbowIO;
 import org.geysermc.rainbow.client.accessor.ResolvedModelAccessor;
 import org.geysermc.rainbow.client.mixin.EntityRenderDispatcherAccessor;
 import org.geysermc.rainbow.mapping.AssetResolver;
+import org.geysermc.rainbow.mapping.ModelTextureSize;
 import org.geysermc.rainbow.mapping.texture.TextureResource;
 import org.geysermc.rainbow.mixin.SpriteContentsAccessor;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
 import java.util.Optional;
 
@@ -73,5 +78,24 @@ public class MinecraftAssetResolver implements AssetResolver {
         NativeImage textureCopy = new NativeImage(original.getWidth(), original.getHeight(), false);
         textureCopy.copyFrom(original);
         return Optional.of(new TextureResource(textureCopy, sprite.contents().width(), sprite.contents().height()));
+    }
+
+    @Override
+    public Optional<ModelTextureSize> getModelTextureSize(Identifier identifier) {
+        return RainbowIO.safeIO(() -> {
+            try (BufferedReader reader = resourceManager.openAsReader(identifier.withPrefix("models/").withSuffix(".json"))) {
+                JsonElement parsed = JsonParser.parseReader(reader);
+                if (!parsed.isJsonObject()) {
+                    return null;
+                }
+
+                JsonArray textureSize = parsed.getAsJsonObject().getAsJsonArray("texture_size");
+                if (textureSize == null || textureSize.size() != 2) {
+                    return null;
+                }
+
+                return new ModelTextureSize(textureSize.get(0).getAsInt(), textureSize.get(1).getAsInt());
+            }
+        });
     }
 }

@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.block.model.SimpleUnbakedGeometry;
 import net.minecraft.client.resources.model.ResolvedModel;
 import net.minecraft.client.resources.model.UnbakedGeometry;
 import net.minecraft.core.Direction;
+import org.geysermc.rainbow.mapping.ModelTextureSize;
 import org.geysermc.rainbow.mapping.texture.StitchedTextures;
 import org.geysermc.rainbow.mixin.FaceBakeryAccessor;
 import org.geysermc.rainbow.pack.geometry.BedrockGeometry;
@@ -19,7 +20,8 @@ import java.util.Map;
 public class GeometryMapper {
     private static final Vector3fc CENTRE_OFFSET = new Vector3f(8.0F, 0.0F, 8.0F);
 
-    public static BedrockGeometry mapGeometry(String identifier, String boneName, ResolvedModel model, StitchedTextures textures) {
+    public static BedrockGeometry mapGeometry(String identifier, String boneName, ResolvedModel model, StitchedTextures textures,
+                                              ModelTextureSize modelTextureSize) {
         UnbakedGeometry top = model.getTopGeometry();
         if (top == UnbakedGeometry.EMPTY) {
             return BedrockGeometry.EMPTY;
@@ -41,7 +43,7 @@ public class GeometryMapper {
 
         SimpleUnbakedGeometry geometry = (SimpleUnbakedGeometry) top;
         for (BlockElement element : geometry.elements()) {
-            BedrockGeometry.Cube cube = mapBlockElement(element, textures).build();
+            BedrockGeometry.Cube cube = mapBlockElement(element, textures, modelTextureSize).build();
             bone.withCube(cube);
             min.min(cube.origin());
             max.max(cube.origin().add(cube.size(), new Vector3f()));
@@ -59,7 +61,7 @@ public class GeometryMapper {
     // After hours of painfully suffering and 40 test builds of Rainbow, I finally got the right formula together and somehow made this mess of a code
     // work properly, or at least, I think it is. I physically jumped in the air and cheered as I saw my models convert properly.
     // Now, make sure you are ready to witness my deformed creation
-    private static BedrockGeometry.Cube.Builder mapBlockElement(BlockElement element, StitchedTextures textures) {
+    private static BedrockGeometry.Cube.Builder mapBlockElement(BlockElement element, StitchedTextures textures, ModelTextureSize modelTextureSize) {
         // For some reason the X axis is inverted on bedrock (thanks Blockbench!!)
 
         // The centre of the model is back by 8 in the X and Z direction on bedrock, so start by move the from and to points of the cube, and later the pivot, like that
@@ -100,8 +102,8 @@ public class GeometryMapper {
             // UV values on Java are always in the [0;16] range, so if the texture was stitched (which it should have been, unless it doesn't exist),
             // adjust the values properly to the texture size, and offset the UVs by the texture's starting UV
             textures.getSprite(face.texture()).ifPresent(sprite -> {
-                float widthMultiplier = sprite.contents().width() / 16.0F;
-                float heightMultiplier = sprite.contents().height() / 16.0F;
+                float widthMultiplier = sprite.contents().width() / (float) modelTextureSize.width();
+                float heightMultiplier = sprite.contents().height() / (float) modelTextureSize.height();
                 uvOrigin.mul(widthMultiplier, heightMultiplier);
                 uvSize.mul(widthMultiplier, heightMultiplier);
                 uvOrigin.add(sprite.getX(), sprite.getY());

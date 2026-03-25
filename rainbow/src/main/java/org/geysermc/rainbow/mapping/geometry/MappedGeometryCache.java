@@ -6,6 +6,7 @@ import net.minecraft.client.resources.model.UnbakedGeometry;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.geysermc.rainbow.Rainbow;
+import org.geysermc.rainbow.mapping.ModelTextureSize;
 import org.geysermc.rainbow.mapping.PackContext;
 import org.geysermc.rainbow.mapping.texture.StitchedTextures;
 import org.geysermc.rainbow.mapping.texture.TextureHolder;
@@ -30,7 +31,8 @@ public class MappedGeometryCache {
         String safeIdentifier = Rainbow.bedrockSafeIdentifier(bedrockIdentifier);
 
         StitchedTextures stitchedTextures = StitchedTextures.stitchModelTextures(model.getTopTextureSlots(), context);
-        BedrockGeometry geometry = GeometryMapper.mapGeometry(safeIdentifier, "bone", model, stitchedTextures);
+        ModelTextureSize modelTextureSize = context.assetResolver().getModelTextureSize(modelIdentifier).orElse(ModelTextureSize.DEFAULT);
+        BedrockGeometry geometry = GeometryMapper.mapGeometry(safeIdentifier, "bone", model, stitchedTextures, modelTextureSize);
         TextureHolder icon = context.geometryRenderer().isPresent() ? context.geometryRenderer().orElseThrow().render(modelIdentifier, stackToRender)
                                                                     : TextureHolder.createNonExistent(modelIdentifier);
         MappedGeometryInstance instance = new MappedGeometryInstance(geometry, TextureHolder.createCustom(stitchedTexturesIdentifier, stitchedTextures.stitched()), icon);

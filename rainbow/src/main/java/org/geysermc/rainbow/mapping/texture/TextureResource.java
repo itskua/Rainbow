@@ -29,6 +29,10 @@ public record TextureResource(NativeImage texture, Optional<FrameSize> frameSize
         return frameSize.orElseGet(() -> new FrameSize(texture.getWidth(), texture.getHeight()));
     }
 
+    public boolean isAnimated() {
+        return frameSize.isPresent();
+    }
+
     @Override
     public void close() {
         texture.close();
