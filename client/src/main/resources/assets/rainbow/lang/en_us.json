@@ -9,6 +9,7 @@
   "commands.rainbow.mapped_items_problems": "Problems occurred whilst mapping items. Read the pack report after finishing the pack for more information",
   "commands.rainbow.no_item_mapped": "No item was mapped. Either no custom item was found, or it was already included in the pack",
   "commands.rainbow.no_items_mapped": "No items were mapped. Either no custom items were found, or they were already included in the pack",
+  "commands.rainbow.no_editor_item": "Hold a custom item with an item model before opening the editor",
   "commands.rainbow.no_pack": "Create a pack first: %s",
   "commands.rainbow.pack_created": "Created pack with name %s",
   "commands.rainbow.pack_finished_error": "Errors occurred whilst writing the pack to disk!",

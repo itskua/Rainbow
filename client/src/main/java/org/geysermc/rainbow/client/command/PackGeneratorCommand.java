@@ -6,11 +6,14 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import org.geysermc.rainbow.client.PackManager;
+import org.geysermc.rainbow.client.editor.RainbowOverlay;
+import org.geysermc.rainbow.client.editor.TransformOverrideManager;
 import org.geysermc.rainbow.client.mapper.InventoryMapper;
 import org.geysermc.rainbow.client.mapper.PackMapper;
 import org.geysermc.rainbow.pack.BedrockPack;
@@ -117,6 +120,19 @@ public class PackGeneratorCommand {
                                     -> style.withUnderlined(true).withClickEvent(new ClickEvent.OpenFile(exportPath.orElseThrow()))));
                             if (!packManager.finish(onFinish)) {
                                 context.getSource().sendError(NO_PACK_CREATED);
+                            }
+                            return 0;
+                        })
+                )
+                .then(ClientCommandManager.literal("editor")
+                        .executes(context -> {
+                            Minecraft minecraft = Minecraft.getInstance();
+                            RainbowOverlay.getInstance().show();
+                            Optional<String> identifier = TransformOverrideManager.identifierForHeldItem();
+                            if (identifier.isEmpty()) {
+                                context.getSource().sendFeedback(Component.literal("Rainbow overlay opened. Hold a custom item with an item model to edit it live."));
+                            } else {
+                                context.getSource().sendFeedback(Component.literal("Rainbow overlay opened for " + identifier.get()));
                             }
                             return 0;
                         })

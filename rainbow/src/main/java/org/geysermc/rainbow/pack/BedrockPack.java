@@ -111,6 +111,30 @@ public class BedrockPack {
         return problems.get() ? MappingResult.PROBLEMS_OCCURRED : MappingResult.MAPPED_SUCCESSFULLY;
     }
 
+    public MappingResult forceRemap(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return MappingResult.NONE_MAPPED;
+        }
+
+        Optional<? extends Identifier> patchedModel = stack.getComponentsPatch().get(DataComponents.ITEM_MODEL);
+        //noinspection OptionalAssignedToNull - annoying Mojang
+        if (patchedModel == null || patchedModel.isEmpty()) {
+            CustomModelData customModelData = stack.get(DataComponents.CUSTOM_MODEL_DATA);
+            Float firstNumber;
+            if (customModelData == null || (firstNumber = customModelData.getFloat(0)) == null) {
+                return MappingResult.NONE_MAPPED;
+            }
+
+            customModelDataMapped.remove(Pair.of(stack.getItem(), firstNumber.intValue()));
+        } else {
+            Identifier model = patchedModel.get();
+            modelsMapped.remove(model);
+            bedrockItems.removeIf(item -> item.identifier().equals(toBedrockIdentifier(model)));
+        }
+
+        return map(stack);
+    }
+
     public MappingResult map(Holder<Item> item, DataComponentPatch patch) {
         ItemStack stack = new ItemStack(item);
         stack.applyComponents(patch);
@@ -285,6 +309,13 @@ public class BedrockPack {
         private static PackManifest defaultManifest(String name) {
             return PackManifest.create(name, PackConstants.DEFAULT_PACK_DESCRIPTION, UUID.randomUUID(), UUID.randomUUID(), BedrockVersion.of(0));
         }
+    }
+
+    private static Identifier toBedrockIdentifier(Identifier itemModelIdentifier) {
+        if (itemModelIdentifier.getNamespace().equals(Identifier.DEFAULT_NAMESPACE)) {
+            return Identifier.fromNamespaceAndPath("geyser_mc", itemModelIdentifier.getPath());
+        }
+        return itemModelIdentifier;
     }
 
     public enum MappingResult {

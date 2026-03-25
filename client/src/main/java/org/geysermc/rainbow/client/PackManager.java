@@ -68,6 +68,10 @@ public final class PackManager {
         return currentPack.map(pack -> EXPORT_DIRECTORY.resolve(pack.name()));
     }
 
+    public Optional<String> getCurrentPackName() {
+        return currentPack.map(BedrockPack::name);
+    }
+
     public boolean finish(Runnable onFinish) {
         currentPack.map(pack -> {
             RainbowIO.safeIO(() -> Files.writeString(getExportPath().orElseThrow().resolve(REPORT_FILE), createPackSummary(pack)));

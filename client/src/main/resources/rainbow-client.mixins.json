@@ -5,10 +5,15 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "EntityRenderDispatcherAccessor",
+    "GameRendererMixin",
+    "GuiMixin",
     "GuiItemRenderStateMixin",
+    "ItemInHandLayerMixin",
+    "MinecraftMixin",
     "ModelManagerMixin",
     "PictureInPictureRendererAccessor",
     "PictureInPictureRendererMixin",
+    "ScreenMixin",
     "SplashRendererAccessor"
   ],
   "injectors": {

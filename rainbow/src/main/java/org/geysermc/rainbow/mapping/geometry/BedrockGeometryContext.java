@@ -3,6 +3,7 @@ package org.geysermc.rainbow.mapping.geometry;
 import net.minecraft.client.renderer.block.model.TextureSlots;
 import net.minecraft.client.resources.model.Material;
 import net.minecraft.client.resources.model.ResolvedModel;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.geysermc.rainbow.Rainbow;
@@ -42,7 +43,11 @@ public record BedrockGeometryContext(Optional<MappedGeometry> geometry,
             // This check should probably be done differently (actually check if the model is 2D or 3D)
 
             geometry = Optional.of(context.geometryCache().mapGeometry(bedrockIdentifier, model, stackToRender, context));
-            animation = Optional.of(AnimationMapper.mapAnimation(Rainbow.bedrockSafeIdentifier(bedrockIdentifier), "bone", model.getTopTransforms()));
+            Identifier overrideIdentifier = stackToRender.get(DataComponents.ITEM_MODEL);
+            String animationIdentifier = overrideIdentifier != null
+                    ? Rainbow.bedrockSafeIdentifier(overrideIdentifier)
+                    : Rainbow.bedrockSafeIdentifier(bedrockIdentifier);
+            animation = Optional.of(AnimationMapper.mapAnimation(animationIdentifier, "bone", model.getTopTransforms()));
             icon = geometry.get().icon();
         }
 

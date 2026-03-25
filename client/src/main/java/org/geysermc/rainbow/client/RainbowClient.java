@@ -9,9 +9,11 @@ import org.geysermc.rainbow.Rainbow;
 import org.geysermc.rainbow.RainbowIO;
 import org.geysermc.rainbow.client.command.CommandSuggestionsArgumentType;
 import org.geysermc.rainbow.client.command.PackGeneratorCommand;
+import org.geysermc.rainbow.client.editor.TransformOverrideManager;
 import org.geysermc.rainbow.client.mapper.PackMapper;
 
 public class RainbowClient implements ClientModInitializer {
+    private static RainbowClient instance;
 
     private final PackManager packManager = new PackManager();
     private final PackMapper packMapper = new PackMapper(packManager);
@@ -19,6 +21,8 @@ public class RainbowClient implements ClientModInitializer {
     // TODO export language overrides
     @Override
     public void onInitializeClient() {
+        instance = this;
+        TransformOverrideManager.load();
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) -> PackGeneratorCommand.register(dispatcher, packManager, packMapper));
         ClientTickEvents.START_CLIENT_TICK.register(packMapper::tick);
 
@@ -26,5 +30,17 @@ public class RainbowClient implements ClientModInitializer {
                 CommandSuggestionsArgumentType.class, SingletonArgumentInfo.contextFree(CommandSuggestionsArgumentType::new));
 
         RainbowIO.registerExceptionListener(new RainbowClientIOHandler());
+    }
+
+    public static RainbowClient getInstance() {
+        return instance;
+    }
+
+    public PackManager getPackManager() {
+        return packManager;
+    }
+
+    public PackMapper getPackMapper() {
+        return packMapper;
     }
 }
